@@ -20,7 +20,8 @@ client = MultiServerMCPClient(
 
         "aviationstack": {
             "transport": "stdio",
-            "command": r"E:\multi_agent_system_demo\multi_agent_system_v2\aviationstack-mcp\.venv\Scripts\python.exe",
+            "command": "/Users/sancharisingh/Desktop/AI-Travel-Planning-App-using-LangGraph-and-MCP/aviationstack-mcp/.venv/bin/python",
+
             "args": [
                 "-m",
                 "aviationstack_mcp",
@@ -34,7 +35,7 @@ client = MultiServerMCPClient(
 
         "weather": {
             "transport": "stdio",
-            "command": r"E:\multi_agent_system_demo\langgraph_env3\Scripts\python.exe",
+            "command": "/Users/sancharisingh/Desktop/AI-Travel-Planning-App-using-LangGraph-and-MCP/langgraph_env3/bin/python",
             "args": [
                 r"E:\Multi_agent_system_with_MCP\custom_weather_mcp_server.py"
             ],
@@ -42,11 +43,7 @@ client = MultiServerMCPClient(
                 "OPENWEATHER_API_KEY": OPENWEATHER_API_KEY
             }
         }
-
-
-
     }
-
 )
 
 
@@ -131,8 +128,6 @@ async def initialize_mcp():
         for tool in tools
         if tool.name != "tavily_search"
     }
-
-
 
 
 
@@ -274,5 +269,5 @@ def extract_destination(query: str):
     return response.content.strip()
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())

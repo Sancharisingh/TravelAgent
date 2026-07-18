@@ -19,7 +19,7 @@ from langchain_groq import ChatGroq
 
 # from tools.tavily_tool import tavily_search
 
-#from mcp_client import tavily_mcp_search
+from mcp_client import tavily_mcp_search
 
 from mcp_client import (
     tavily_mcp_search,

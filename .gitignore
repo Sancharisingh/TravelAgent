@@ -1,0 +1,7 @@
+*.env
+aviationstack-mcp/.venv/
+aviationstack-mcp
+langgraph_env3/
+.env
+testing_aviationstack_mcp_server.py
+testing_weather_mcp_server.py
