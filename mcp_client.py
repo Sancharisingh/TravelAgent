@@ -1,11 +1,13 @@
 import os
 import asyncio
+from pathlib import Path
 
 from dotenv import load_dotenv
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 #load_dotenv()
 load_dotenv(override=True)
+BASE_DIR = Path(__file__).resolve().parent
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 AVIATION_STACK_API_KEY = os.getenv("AVIATIONSTACK_API_KEY")
 
@@ -35,9 +37,9 @@ client = MultiServerMCPClient(
 
         "weather": {
             "transport": "stdio",
-            "command": "/Users/sancharisingh/Desktop/AI-Travel-Planning-App-using-LangGraph-and-MCP/langgraph_env3/bin/python",
+            "command": str(BASE_DIR / "langgraph_env3" / "bin" / "python"),
             "args": [
-                r"E:\Multi_agent_system_with_MCP\custom_weather_mcp_server.py"
+                str(BASE_DIR / "custom_weather_mcp_server.py")
             ],
             "env": {
                 "OPENWEATHER_API_KEY": OPENWEATHER_API_KEY

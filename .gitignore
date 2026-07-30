@@ -1,6 +1,19 @@
-*.env
-aviationstack-mcp
-langgraph_env3/
+# Environment files
 .env
+*.env
+
+# Virtual environments
+langgraph_env3/
+.venv/
+venv/
+aviationstack-mcp/.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Test files (if you don't want to commit them)
 testing_aviationstack_mcp_server.py
 testing_weather_mcp_server.py
+travel_plans
+

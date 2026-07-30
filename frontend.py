@@ -2,10 +2,11 @@ import os
 import streamlit as st
 from datetime import datetime
 from langchain_core.messages import HumanMessage
-from main import app
+from main import CHECKPOINTER_STATUS, app
+from travel_requirements import check_hotel_pricing_requirements
 
 st.set_page_config(
-    page_title="AI Travel Booking System",
+    page_title="Travel Agent",
     page_icon="✈️",
     layout="wide"
 )
@@ -305,15 +306,18 @@ with st.sidebar:
     st.markdown("<div class='sidebar-title'>🌍 AI Travel Planner</div>", unsafe_allow_html=True)
     st.markdown("---")
 
-    thread_id = st.text_input("👤 User ID", value="aarohi_user",
+    thread_id = st.text_input("👤 User ID", value="Sanchari",
                               help="Your session ID — keeps travel history across queries")
+
+    if not CHECKPOINTER_STATUS.startswith("PostgreSQL memory enabled"):
+        st.warning("PostgreSQL memory is offline. The app can run, but history will not be saved.")
 
     st.markdown("<div class='sidebar-title'>Powered by</div>", unsafe_allow_html=True)
     for tech in ["🔗 LangGraph", "🧠 Groq · LLaMA 3.3 70B", "🐘 PostgreSQL", "🔍 Tavily Search", "✈️ AviationStack"]:
         st.markdown(f"<div class='sidebar-chip'>{tech}</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='sidebar-title'>Agent Pipeline</div>", unsafe_allow_html=True)
-    for step in ["① Flight Agent", "② Hotel Agent", "③ Itinerary Agent", "④ Final Agent"]:
+    for step in ["① Flight Agent", "② Route Planner", "③ Hotel Agent", "④ Weather Agent", "⑤ Attraction Availability", "⑥ Itinerary Agent"]:
         st.markdown(f"<div class='sidebar-chip'>{step}</div>", unsafe_allow_html=True)
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
@@ -324,7 +328,7 @@ st.markdown("""
          alt="airplane above clouds"/>
     <div class="hero-content">
         <div class="hero-badge">✦ Multi-Agent AI System</div>
-        <div class="hero-title">✈️ AI Travel Booking System</div>
+        <div class="hero-title">Travel Agent</div>
         <div class="hero-sub">Four specialized agents work together — searching flights, hotels, building an itinerary, and delivering your perfect trip plan.</div>
     </div>
 </div>
@@ -376,18 +380,34 @@ generate = st.button("🚀  Generate My Travel Plan", use_container_width=True)
 # ── Agent pipeline ────────────────────────────────────────────────────────────
 AGENT_META = {
     "flight_agent":    ("✈️", "Flight Agent"),
+    "route_agent":     ("🧭", "Route Planner"),
     "hotel_agent":     ("🏨", "Hotel Agent"),
+    "weather_agent":   ("🌦️", "Weather Agent"),
+    "attraction_agent": ("🏛️", "Trusted Attraction Availability"),
     "itinerary_agent": ("🗓️", "Itinerary Agent"),
-    "final_agent":     ("🧠", "Final Agent"),
 }
 
 if generate:
     if not user_query.strip():
         st.warning("Please describe your trip first.")
     else:
+        requirement_check = check_hotel_pricing_requirements(user_query)
+
+        if not requirement_check.is_complete:
+            st.warning(requirement_check.message)
+            st.stop()
+
         config = {"configurable": {"thread_id": thread_id}}
-        collected = {"flight_results": "", "hotel_results": "",
-                     "itinerary": "", "final_response": "", "llm_calls": 0}
+        collected = {
+            "flight_results": "",
+            "route_plan": "",
+            "hotel_results": "",
+            "weather_results": "",
+            "attraction_results": "",
+            "itinerary": "",
+            "final_response": "",
+            "llm_calls": 0,
+        }
 
         st.markdown("---")
         st.markdown("<div class='sec-head'><span>🤖 Agent Pipeline — Live</span></div>",
@@ -397,8 +417,11 @@ if generate:
             {
                 "messages": [HumanMessage(content=user_query)],
                 "user_query": user_query,
+                "route_plan": "",
                 "flight_results": "",
                 "hotel_results": "",
+                "weather_results": "",
+                "attraction_results": "",
                 "itinerary": "",
                 "llm_calls": 0,
             },
@@ -414,14 +437,30 @@ if generate:
                         collected["flight_results"] = text
                         st.markdown(text or "_No flight data returned._")
 
+                    elif node_name == "route_agent":
+                        text = state_update.get("route_plan", "")
+                        collected["route_plan"] = text
+                        st.markdown(text or "_No route plan generated._")
+
                     elif node_name == "hotel_agent":
                         text = state_update.get("hotel_results", "")
                         collected["hotel_results"] = text
                         st.markdown(text or "_No hotel data returned._")
 
+                    elif node_name == "weather_agent":
+                        text = state_update.get("weather_results", "")
+                        collected["weather_results"] = text
+                        st.markdown(text or "_No weather data returned._")
+
+                    elif node_name == "attraction_agent":
+                        text = state_update.get("attraction_results", "")
+                        collected["attraction_results"] = text
+                        st.markdown(text or "_No trusted attraction rule matched._")
+
                     elif node_name == "itinerary_agent":
                         text = state_update.get("itinerary", "")
                         collected["itinerary"] = text
+                        collected["final_response"] = text
                         st.markdown(text or "_No itinerary generated._")
 
                     elif node_name == "final_agent":
@@ -435,7 +474,7 @@ if generate:
         # Metrics
         st.markdown(f"""
         <div class="metric-row">
-            <div class="metric-box"><div class="metric-val">4</div><div class="metric-lbl">Agents Run</div></div>
+            <div class="metric-box"><div class="metric-val">6</div><div class="metric-lbl">Agents Run</div></div>
             <div class="metric-box"><div class="metric-val">{collected['llm_calls']}</div><div class="metric-lbl">LLM Calls</div></div>
             <div class="metric-box"><div class="metric-val">✅</div><div class="metric-lbl">Status</div></div>
         </div>
@@ -466,8 +505,23 @@ if generate:
 
 ---
 
+## 🧭 Route Plan
+{collected['route_plan'] or 'N/A'}
+
+---
+
 ## 🏨 Hotel Information
 {collected['hotel_results'] or 'N/A'}
+
+---
+
+## 🌦️ Weather Information
+{collected['weather_results'] or 'N/A'}
+
+---
+
+## 🏛️ Trusted Attraction Availability
+{collected['attraction_results'] or 'N/A'}
 
 ---
 
